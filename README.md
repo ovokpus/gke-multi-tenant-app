@@ -1,7 +1,10 @@
 # gke-multi-tenant-app
+
 Managing a GKE Multi-tenant Cluster with Namespaces
 
+---
 
+![image](./images/gke-monitoring.png)
 
 ---
 
@@ -24,9 +27,9 @@ You should see a list of YAML manifests (for namespaces, quotas, RBAC, etc.) and
 
 ### Behind the scenes
 
-* **Why `gsutil`?** – Although Google now recommends `gcloud storage cp`, `gsutil` remains fully supported and has identical flags for recursive, parallel copying.
-* **Public buckets** – The `spls` (Skills Boost) buckets are world-readable; no extra IAM steps are required.
-* **Multi-threading (`-m`)** – Parallelism dramatically improves throughput when a bucket contains dozens of small files, as is typical for lab starter kits.
+- **Why `gsutil`?** – Although Google now recommends `gcloud storage cp`, `gsutil` remains fully supported and has identical flags for recursive, parallel copying.
+- **Public buckets** – The `spls` (Skills Boost) buckets are world-readable; no extra IAM steps are required.
+- **Multi-threading (`-m`)** – Parallelism dramatically improves throughput when a bucket contains dozens of small files, as is typical for lab starter kits.
 
 > ✅ **You’re ready for Task 2.** All YAML manifests and helper scripts are now on your Cloud Shell instance and you’re scoped to the correct directory, so the next `kubectl` or `gcloud` commands will reference local files without extra path juggling.
 
@@ -36,7 +39,7 @@ You should see a list of YAML manifests (for namespaces, quotas, RBAC, etc.) and
 
 > **Ensuring that every tenant works in its own **namespace** is the cornerstone of a cost-efficient, multi-tenant GKE setup. The steps below walk you through authenticating to the lab cluster, inspecting the four built-in system namespaces, creating two team namespaces, and verifying that identically named Pods can coexist when isolated by namespace. These commands slot straight into the playbook you began in Task 1 and prepare the ground for upcoming RBAC and quota work.**
 
-### 1  Authenticate to the multi-tenant cluster
+### 1 Authenticate to the multi-tenant cluster
 
 ```bash
 export ZONE=us-east1-b
@@ -44,9 +47,9 @@ gcloud config set compute/zone "${ZONE}"
 gcloud container clusters get-credentials multi-tenant-cluster
 ```
 
-*`get-credentials` adds the cluster’s endpoint and certificate to `$HOME/.kube/config`, so every `kubectl` command that follows is authenticated and points at the right control plane.*
+_`get-credentials` adds the cluster’s endpoint and certificate to `$HOME/.kube/config`, so every `kubectl` command that follows is authenticated and points at the right control plane._
 
-### 2  Inspect default Kubernetes namespaces
+### 2 Inspect default Kubernetes namespaces
 
 ```bash
 kubectl get namespace
@@ -61,14 +64,14 @@ You should see the **four system namespaces** that ship with every cluster:
 | `kube-public`     | Read-only space designed for cluster-wide public resources (e.g., the root CA).      |
 | `kube-node-lease` | Stores node heartbeat Lease objects so the controller can spot node failure quickly. |
 
-### 3  Create tenant namespaces
+### 3 Create tenant namespaces
 
 ```bash
 kubectl create namespace team-a
 kubectl create namespace team-b
 ```
 
-*Never start a custom namespace with `kube-`; that prefix is reserved for system use.*
+_Never start a custom namespace with `kube-`; that prefix is reserved for system use._
 
 Verify:
 
@@ -76,7 +79,7 @@ Verify:
 kubectl get namespace
 ```
 
-### 4  Deploy identical Pods into each namespace
+### 4 Deploy identical Pods into each namespace
 
 ```bash
 kubectl run app-server --image=centos --namespace=team-a -- sleep infinity
@@ -89,7 +92,7 @@ List every Pod in every namespace:
 kubectl get pods -A
 ```
 
-### 5  Inspect and narrow your kubectl context
+### 5 Inspect and narrow your kubectl context
 
 ```bash
 kubectl describe pod app-server --namespace=team-a
@@ -97,25 +100,25 @@ kubectl config set-context --current --namespace=team-a
 kubectl describe pod app-server   # now runs without --namespace
 ```
 
-### 6  Why namespaces matter for cost & isolation
+### 6 Why namespaces matter for cost & isolation
 
-* **Quota boundaries** – ResourceQuota and LimitRange objects attach to a namespace, capping runaway CPU/RAM and guaranteeing fair-share usage.
-* **Access controls** – RBAC rules bind identities to Roles *within* a namespace, so each team sees only its own objects.
-* **Network segmentation** – NetworkPolicy selectors use namespace and pod labels to permit or deny traffic, shutting down “noisy-neighbour” risks.
-* **Billing clarity** – GKE Cost Allocation labels every object with its namespace, letting you attribute spend per team in BigQuery or Looker Studio.
+- **Quota boundaries** – ResourceQuota and LimitRange objects attach to a namespace, capping runaway CPU/RAM and guaranteeing fair-share usage.
+- **Access controls** – RBAC rules bind identities to Roles _within_ a namespace, so each team sees only its own objects.
+- **Network segmentation** – NetworkPolicy selectors use namespace and pod labels to permit or deny traffic, shutting down “noisy-neighbour” risks.
+- **Billing clarity** – GKE Cost Allocation labels every object with its namespace, letting you attribute spend per team in BigQuery or Looker Studio.
 
 ---
 
 ## **Task 3 — Access Control in namespaces**
 
-> **A minimal-privilege, namespace-scoped access model in GKE is built by pairing a lightweight IAM role that lets identities reach the cluster API with fine-grained Kubernetes RBAC objects that apply only inside a tenant’s namespace. The steps below translate the raw lab instructions into a reusable playbook, explain *why* each command matters, and highlight best-practice guard-rails for multi-tenant security and cost control.**
+> **A minimal-privilege, namespace-scoped access model in GKE is built by pairing a lightweight IAM role that lets identities reach the cluster API with fine-grained Kubernetes RBAC objects that apply only inside a tenant’s namespace. The steps below translate the raw lab instructions into a reusable playbook, explain _why_ each command matters, and highlight best-practice guard-rails for multi-tenant security and cost control.**
 
-### 1  Why IAM + RBAC are both required
+### 1 Why IAM + RBAC are both required
 
-* **IAM (Google Cloud)** operates at the project/cluster level; without it, a principal cannot even hit the Kubernetes API server.
-* **RBAC (Kubernetes)** then scopes what that principal may actually do inside the cluster or namespace (create Pods, list Services, etc.). RBAC rules never override broader IAM rights, so keep IAM minimal and let RBAC carry the detail.
+- **IAM (Google Cloud)** operates at the project/cluster level; without it, a principal cannot even hit the Kubernetes API server.
+- **RBAC (Kubernetes)** then scopes what that principal may actually do inside the cluster or namespace (create Pods, list Services, etc.). RBAC rules never override broader IAM rights, so keep IAM minimal and let RBAC carry the detail.
 
-### 2  Grant the service account the *minimal* IAM role
+### 2 Grant the service account the _minimal_ IAM role
 
 ```bash
 gcloud projects add-iam-policy-binding "${GOOGLE_CLOUD_PROJECT}" \
@@ -130,9 +133,9 @@ gcloud projects get-iam-policy "${GOOGLE_CLOUD_PROJECT}" --flatten="bindings[].m
   --filter="bindings.members:team-a-dev" --format="table(bindings.role)"
 ```
 
-### 3  Create the tenant’s namespace-scoped Role
+### 3 Create the tenant’s namespace-scoped Role
 
-#### 3.1  Single-rule role (CLI one-liner)
+#### 3.1 Single-rule role (CLI one-liner)
 
 ```bash
 kubectl create role pod-reader \
@@ -141,7 +144,7 @@ kubectl create role pod-reader \
   --namespace=team-a
 ```
 
-#### 3.2  Multi-rule role (YAML)
+#### 3.2 Multi-rule role (YAML)
 
 ```yaml
 # developer-role.yaml
@@ -163,7 +166,7 @@ rules:
 kubectl apply -f developer-role.yaml
 ```
 
-### 4  Bind the Role to the service account
+### 4 Bind the Role to the service account
 
 ```bash
 kubectl create rolebinding team-a-developers \
@@ -172,7 +175,7 @@ kubectl create rolebinding team-a-developers \
   --namespace=team-a
 ```
 
-### 5  Impersonate & test the permissions
+### 5 Impersonate & test the permissions
 
 ```bash
 gcloud iam service-accounts keys create /tmp/key.json \
@@ -184,7 +187,7 @@ kubectl get pods -n team-a        # should list app-server
 kubectl get pods -n team-b        # should be Forbidden
 ```
 
-### 6  Good-practice guard-rails
+### 6 Good-practice guard-rails
 
 | Control                                               | Why                                                                | How                                                                          |
 | ----------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
@@ -201,7 +204,7 @@ kubectl get pods -n team-b        # should be Forbidden
 
 > **Resource quotas let you ring-fence each tenant’s share of cluster capacity, preventing “noisy neighbour” overruns while giving finance teams clean metrics for show-back. In GKE you pair a lightweight IAM + RBAC model (already set up in Task 3) with one `ResourceQuota` (and usually a matching `LimitRange`) per namespace.**
 
-### 1  Set an Object-Count Quota (Pods + LB)
+### 1 Set an Object-Count Quota (Pods + LB)
 
 ```bash
 kubectl create quota test-quota \
@@ -215,14 +218,14 @@ Verify:
 kubectl describe quota test-quota -n team-a
 ```
 
-### 2  Update the Pod limit to 6
+### 2 Update the Pod limit to 6
 
 ```bash
 export KUBE_EDITOR="nano"
 kubectl edit quota test-quota --namespace=team-a   # change count/pods to "6"
 ```
 
-### 3  Cap Aggregate CPU & Memory
+### 3 Cap Aggregate CPU & Memory
 
 ```yaml
 # cpu-mem-quota.yaml
@@ -243,7 +246,7 @@ spec:
 kubectl apply -f cpu-mem-quota.yaml
 ```
 
-### 4  Demonstrate the quota
+### 4 Demonstrate the quota
 
 ```yaml
 # cpu-mem-demo-pod.yaml
@@ -254,11 +257,11 @@ metadata:
   namespace: team-a
 spec:
   containers:
-  - name: cpu-mem-demo-ctr
-    image: nginx
-    resources:
-      requests: { cpu: "100m", memory: "128Mi" }
-      limits:   { cpu: "400m", memory: "512Mi" }
+    - name: cpu-mem-demo-ctr
+      image: nginx
+      resources:
+        requests: { cpu: "100m", memory: "128Mi" }
+        limits: { cpu: "400m", memory: "512Mi" }
 ```
 
 ```bash
@@ -266,7 +269,7 @@ kubectl create -f cpu-mem-demo-pod.yaml --namespace=team-a
 kubectl describe quota cpu-mem-quota --namespace=team-a
 ```
 
-### 5  Monitoring & Alerting
+### 5 Monitoring & Alerting
 
 | Tool                     | What to track                            |
 | ------------------------ | ---------------------------------------- |
@@ -279,23 +282,23 @@ kubectl describe quota cpu-mem-quota --namespace=team-a
 
 ## **Task 5 — Monitoring GKE & GKE Usage Metering**
 
-> **A single GKE dashboard already tells you *who* (namespace, workload) is burning *what* (CPU, RAM, disk), but coupling it with GKE Usage Metering unlocks line-item cost attribution in BigQuery and Looker Studio.**
+> **A single GKE dashboard already tells you _who_ (namespace, workload) is burning _what_ (CPU, RAM, disk), but coupling it with GKE Usage Metering unlocks line-item cost attribution in BigQuery and Looker Studio.**
 
-### 1  Explore the Built-in GKE Dashboard
+### 1 Explore the Built-in GKE Dashboard
 
 ```
 Navigation menu ▶ Observability ▶ Monitoring ▶ Dashboards ▶ GKE
 ```
 
-*Filter Namespaces → team-a to drill into a tenant.*
+_Filter Namespaces → team-a to drill into a tenant._
 
-### 2  Metrics Explorer – CPU by namespace
+### 2 Metrics Explorer – CPU by namespace
 
-1. Metrics Explorer → Metric: *Kubernetes Container / CPU usage time*
+1. Metrics Explorer → Metric: _Kubernetes Container / CPU usage time_
 2. Filter: `namespace_name != kube-system`
 3. Aggregation: Sum **by `namespace_name`**
 
-### 3  Enable Usage Metering
+### 3 Enable Usage Metering
 
 ```bash
 export ZONE=us-east1-b
@@ -304,7 +307,7 @@ gcloud container clusters update multi-tenant-cluster \
   --resource-usage-bigquery-dataset cluster_dataset
 ```
 
-### 4  Build the Cost-Breakdown Table
+### 4 Build the Cost-Breakdown Table
 
 ```bash
 export BILLING_TABLE=${GOOGLE_CLOUD_PROJECT}.billing_dataset.gcp_billing_export_v1_xxxx
@@ -322,7 +325,7 @@ bq query --use_legacy_sql=false \
   "$(cat cost_breakdown.sql)"
 ```
 
-### 5  Visualise in Looker Studio
+### 5 Visualise in Looker Studio
 
 1. Looker Studio → **Create ▶ Data Source → BigQuery → Custom Query**
 2. Query:
@@ -330,13 +333,18 @@ bq query --use_legacy_sql=false \
    ```sql
    SELECT * FROM `[PROJECT_ID].cluster_dataset.usage_metering_cost_breakdown`
    ```
+
 3. **Create Report**, add a **table**:
 
-   * Data Range Dimension → `usage_start_time`
-   * Dimension → `namespace`
-   * Metric → `cost`
-   * Filters → exclude blank namespaces, include `type = "requests"`
+   - Data Range Dimension → `usage_start_time`
+   - Dimension → `namespace`
+   - Metric → `cost`
+   - Filters → exclude blank namespaces, include `type = "requests"`
+
 4. Duplicate → change chart to **Pie** for cost-by-namespace.
+
+   ![image](./images/pie-chart.png)
+
 5. Add a **Donut** chart, Dimension `resource_name`, Metric `cost`, same filters.
 6. Add **Dropdown control** bound to the donut for namespace drill-down.
 7. Share ▶ Download as PDF for exec review.
@@ -345,9 +353,8 @@ bq query --use_legacy_sql=false \
 
 > **With these five tasks completed you now have:**
 >
-> * A single shared GKE cluster with namespace isolation
-> * Least-privilege IAM + RBAC for each tenant
-> * Hard CPU/Mem & object quotas per namespace
-> * Real-time Monitoring dashboards and alerts
-> * BigQuery + Looker Studio cost reports broken down by namespace and resource type
-
+> - A single shared GKE cluster with namespace isolation
+> - Least-privilege IAM + RBAC for each tenant
+> - Hard CPU/Mem & object quotas per namespace
+> - Real-time Monitoring dashboards and alerts
+> - BigQuery + Looker Studio cost reports broken down by namespace and resource type
