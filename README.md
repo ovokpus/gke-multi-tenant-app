@@ -8,6 +8,10 @@ Managing a GKE Multi-tenant Cluster with Namespaces
 
 ---
 
+Below is a step-by-step implementation of this Lab project. To see the Terraform Implementation steps, go to [this link](./terraform/README.md)
+
+---
+
 ## **Task 1 — Download the required files**
 
 > **Before diving into the hands-on multi-tenant work, the very first step is to pull down the lab assets from the public Cloud Storage bucket and place yourself in the working directory. The two commands below do exactly that, and the short explanations will help you understand (and troubleshoot) what each flag does.**
